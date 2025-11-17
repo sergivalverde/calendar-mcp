@@ -1,0 +1,118 @@
+{
+  "calendar": {
+    "calendars": null
+  },
+  "classification": {
+    "excluded_titles": [
+      "Blocked ✋",
+      "Blocked",
+      "Busy",
+      "Tentative"
+    ],
+    "personal_patterns": [
+      "Helena",
+      "Furgo Sergi - Mireia ❤️",
+      "Teatre mireia i amigues",
+      "Lunch - Helena"
+    ],
+    "all_day_exclusion": true,
+    "team_domains": [
+      "tensormedical.ai"
+    ],
+    "information_processing_keywords": [
+      "email",
+      "processing",
+      "information",
+      "communication"
+    ],
+    "recruiting_keywords": [
+      "interview",
+      "recruiting",
+      "hiring",
+      "candidate"
+    ],
+    "reading_keywords": [
+      "reading",
+      "anki",
+      "study",
+      "paper",
+      "book"
+    ],
+    "team_keywords": [
+      "1:1",
+      "sync",
+      "weekly",
+      "bi-weekly",
+      "standup"
+    ],
+    "investor_relations_keywords": [
+      "investment",
+      "investor",
+      "shareholder",
+      "fundraising",
+      "deck",
+      "pitch"
+    ],
+    "strategy_keywords": [
+      "strategy",
+      "planning",
+      "recap",
+      "roadmap",
+      "reflection",
+      "vision",
+      "objective"
+    ],
+    "sales_marketing_keywords": [
+      "demo",
+      "proposal",
+      "call with",
+      "presentation",
+      "pitch"
+    ],
+    "network_keywords": [
+      "network",
+      "connection",
+      "event",
+      "conference"
+    ],
+    "engineering_keywords": [
+      "review",
+      "integration",
+      "product",
+      "technical",
+      "code",
+      "implementation"
+    ],
+    "operations_keywords": [
+      "audit",
+      "tax",
+      "legal",
+      "HR",
+      "compliance",
+      "accounting",
+      "operations"
+    ],
+    "exercise_keywords": [
+      "exercise",
+      "workout",
+      "run",
+      "swim",
+      "gym",
+      "🏋️",
+      "🏃‍♀️",
+      "🏊‍♂️"
+    ],
+    "meditation_keywords": [
+      "meditation",
+      "mindfulness",
+      "🧘‍♀️"
+    ],
+    "github_repos_engineering": [
+      "research",
+      "brain"
+    ],
+    "github_repos_strategy": [
+      "brain"
+    ]
+  }
+}
