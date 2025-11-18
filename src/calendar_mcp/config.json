@@ -1,6 +1,6 @@
 {
   "calendar": {
-    "calendars": ["Calendar", "Personal"],
+    "calendars": ["Calendar", "Personal", "Energy"],
     "default_calendar": "Calendar",
     "event_creation": {
       "default_duration_minutes": 60,

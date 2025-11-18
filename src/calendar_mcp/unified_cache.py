@@ -375,19 +375,19 @@ class UnifiedCache:
             "-nc",  # No color
             "-iep",
             "title,datetime,location,notes,attendees",
-            "-po",  # Property order
-            "datetime,title,location,notes,attendees",
             "-df",
             "%Y-%m-%d",  # Date format: YYYY-MM-DD
             "-tf",
             "%H:%M",  # Time format: HH:MM
-            f"eventsFrom:{start_date.strftime('%Y-%m-%d')}",
-            f"to:{end_date.strftime('%Y-%m-%d')}",
         ]
 
         # Add calendar filter if specified
         if self.calendars:
             cmd.extend(["-includeCals", ",".join(self.calendars)])
+        
+        # Command must come last
+        cmd.append(f"eventsFrom:{start_date.strftime('%Y-%m-%d')}")
+        cmd.append(f"to:{end_date.strftime('%Y-%m-%d')}")
 
         logger.debug(f"Running icalBuddy: {' '.join(cmd)}")
 
@@ -426,71 +426,59 @@ class UnifiedCache:
         while i < len(lines):
             line = lines[i].strip()
 
-            # Events start with bullet point
+            # Events start with bullet point  
             if line.startswith("• "):
-                first_field = line[2:].strip()
+                event_title = line[2:].strip()
                 datetime_str = None
-                event_title = None
                 location = None
                 notes = None
                 attendees = []
 
-                # Check if first field is datetime or title
-                if re.match(r"\d{4}-\d{2}-\d{2}", first_field):
-                    # Format: • datetime (title on next line)
-                    datetime_str = first_field
-                    # Get title from next line
-                    if i + 1 < len(lines):
-                        event_title = lines[i + 1].strip()
+                # Look for datetime on next line
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    if re.match(r"\d{4}-\d{2}-\d{2}", next_line):
+                        datetime_str = next_line
                         i += 1
-                else:
-                    # Format: • title (datetime on next line)
-                    event_title = first_field
-                    # Look for datetime on next line
-                    if i + 1 < len(lines):
-                        next_line = lines[i + 1].strip()
-                        if re.match(r"\d{4}-\d{2}-\d{2}", next_line):
-                            datetime_str = next_line
-                            i += 1
 
-                # Look for additional details (location, notes, attendees)
-                while i + 1 < len(lines):
-                    detail_line = lines[i + 1].strip()
+                        # Look for additional details
+                        while i + 1 < len(lines):
+                            detail_line = lines[i + 1].strip()
 
-                    # Stop at next event
-                    if detail_line.startswith("• "):
-                        break
-                    
-                    # Stop if we hit another datetime (signals next event in new format)
-                    if re.match(r"\d{4}-\d{2}-\d{2}", detail_line):
-                        break
+                            # Stop at next event
+                            if detail_line.startswith("• "):
+                                break
+                            
+                            # Stop if we hit another datetime (unlikely but safe)
+                            if re.match(r"\d{4}-\d{2}-\d{2}", detail_line):
+                                break
 
-                    # Parse details
-                    if detail_line.startswith("location:"):
-                        location = detail_line[9:].strip()
-                        if location == "(null)":
-                            location = None
-                    elif detail_line.startswith("notes:"):
-                        notes = detail_line[6:].strip()
-                        if notes == "(null)":
-                            notes = None
-                    elif detail_line.startswith("attendees:"):
-                        attendees_str = detail_line[10:].strip()
-                        if attendees_str and attendees_str != "(null)":
-                            # Parse "Name <email>" format
-                            attendee_matches = re.findall(
-                                r"([^<]+)<([^>]+)>", attendees_str
-                            )
-                            for name, email in attendee_matches:
-                                attendees.append(
-                                    Attendee(
-                                        name=name.strip(), email=email.strip()
+                            # Parse details
+                            if detail_line.startswith("location:"):
+                                location = detail_line[9:].strip()
+                                if location == "(null)":
+                                    location = None
+                            elif detail_line.startswith("notes:"):
+                                notes = detail_line[6:].strip()
+                                if notes == "(null)":
+                                    notes = None
+                            elif detail_line.startswith("attendees:"):
+                                attendees_str = detail_line[10:].strip()
+                                if attendees_str and attendees_str != "(null)":
+                                    # Parse "Name <email>" format
+                                    attendee_matches = re.findall(
+                                        r"([^<]+)<([^>]+)>", attendees_str
                                     )
-                                )
+                                    for name, email in attendee_matches:
+                                        attendees.append(
+                                            Attendee(
+                                                name=name.strip(), email=email.strip()
+                                            )
+                                        )
 
-                    i += 1
-                    if not detail_line:
-                        break
+                            i += 1
+                            if not detail_line:
+                                break
 
                 # Create event if we have both datetime and title
                 if datetime_str and event_title:
