@@ -434,51 +434,46 @@ class UnifiedCache:
                 notes = None
                 attendees = []
 
-                # Look for datetime on next line
-                if i + 1 < len(lines):
-                    next_line = lines[i + 1].strip()
-                    if re.match(r"\d{4}-\d{2}-\d{2}", next_line):
-                        datetime_str = next_line
-                        i += 1
-
-                        # Look for additional details
-                        while i + 1 < len(lines):
-                            detail_line = lines[i + 1].strip()
-
-                            # Stop at next event
-                            if detail_line.startswith("• "):
-                                break
-                            
-                            # Stop if we hit another datetime (unlikely but safe)
-                            if re.match(r"\d{4}-\d{2}-\d{2}", detail_line):
-                                break
-
-                            # Parse details
-                            if detail_line.startswith("location:"):
-                                location = detail_line[9:].strip()
-                                if location == "(null)":
-                                    location = None
-                            elif detail_line.startswith("notes:"):
-                                notes = detail_line[6:].strip()
-                                if notes == "(null)":
-                                    notes = None
-                            elif detail_line.startswith("attendees:"):
-                                attendees_str = detail_line[10:].strip()
-                                if attendees_str and attendees_str != "(null)":
-                                    # Parse "Name <email>" format
-                                    attendee_matches = re.findall(
-                                        r"([^<]+)<([^>]+)>", attendees_str
+                # Scan ahead to find datetime and details
+                j = i + 1
+                while j < len(lines):
+                    detail_line = lines[j].strip()
+                    
+                    # Stop at next event
+                    if detail_line.startswith("• "):
+                        break
+                    
+                    # Check if this is the datetime line
+                    if not datetime_str and re.match(r"\d{4}-\d{2}-\d{2}", detail_line):
+                        datetime_str = detail_line
+                        j += 1
+                        continue
+                    
+                    # Parse field details
+                    if detail_line.startswith("location:"):
+                        location = detail_line[9:].strip()
+                        if location == "(null)":
+                            location = None
+                    elif detail_line.startswith("notes:"):
+                        notes = detail_line[6:].strip()
+                        if notes == "(null)":
+                            notes = None
+                    elif detail_line.startswith("attendees:"):
+                        attendees_str = detail_line[10:].strip()
+                        if attendees_str and attendees_str != "(null)":
+                            # Parse "Name <email>" format
+                            attendee_matches = re.findall(
+                                r"([^<]+)<([^>]+)>", attendees_str
+                            )
+                            for name, email in attendee_matches:
+                                attendees.append(
+                                    Attendee(
+                                        name=name.strip(), email=email.strip()
                                     )
-                                    for name, email in attendee_matches:
-                                        attendees.append(
-                                            Attendee(
-                                                name=name.strip(), email=email.strip()
-                                            )
-                                        )
-
-                            i += 1
-                            if not detail_line:
-                                break
+                                )
+                    # Skip empty lines and continuation lines (just increment j)
+                    
+                    j += 1
 
                 # Create event if we have both datetime and title
                 if datetime_str and event_title:
@@ -594,7 +589,10 @@ class UnifiedCache:
                 if event:
                     # Filter by date range
                     event_date = event.start.date()
-                    if start_date <= event_date <= end_date:
+                    # Convert start_date and end_date to date if they're datetime
+                    start_d = start_date.date() if hasattr(start_date, 'date') else start_date
+                    end_d = end_date.date() if hasattr(end_date, 'date') else end_date
+                    if start_d <= event_date <= end_d:
                         events.append(event)
 
             return events
