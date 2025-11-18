@@ -13,7 +13,8 @@ except ImportError as e:
     print("Please ensure MCP is installed: uv add mcp")
     raise
 
-from .calendar_extractor import CalendarExtractor
+from .calendar_manager import CalendarManager
+from .unified_cache import UnifiedCache
 from .classifier import EventClassifier
 from .energy_tracker import EnergyTracker
 from .report_generator import ReportGenerator
@@ -21,7 +22,6 @@ from .config import ConfigManager, CalendarAnalysisConfig
 from .models import CalendarEvent
 from .applescript_writer import AppleScriptCalendarWriter, list_available_calendars, find_free_slots
 from .nl_parser import parse_event_request
-from .simple_cache import SimpleCalendarCache
 
 
 class CalendarAnalysisServer:
@@ -31,7 +31,7 @@ class CalendarAnalysisServer:
         """Initialize the calendar analysis server."""
         self.server = Server("calendar-analysis")
         self.config_manager = ConfigManager()
-        self.calendar_extractor = None
+        self.calendar_manager = None
         self.calendar_writer = None
         self.classifier = None
         self.energy_tracker = EnergyTracker()
@@ -136,6 +136,29 @@ class CalendarAnalysisServer:
                         },
                         "required": ["start_date", "end_date", "duration_minutes"]
                     }
+                ),
+                Tool(
+                    name="refresh_cache",
+                    description="Manually refresh the calendar cache to get the latest events. "
+                               "Use this after creating/modifying events or when data seems stale.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "force": {
+                                "type": "boolean",
+                                "description": "Force refresh even if cache is fresh (default: false)"
+                            }
+                        }
+                    }
+                ),
+                Tool(
+                    name="get_cache_status",
+                    description="Get calendar cache health status including age, event count, "
+                               "expiration status, and refresh schedule.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {}
+                    }
                 )
             ]
         
@@ -154,6 +177,10 @@ class CalendarAnalysisServer:
                 return await self._list_calendars()
             elif name == "find_free_time":
                 return await self._find_free_time(arguments)
+            elif name == "refresh_cache":
+                return await self._refresh_cache(arguments)
+            elif name == "get_cache_status":
+                return await self._get_cache_status()
 
             raise ValueError(f"Unknown tool: {name}")
     
@@ -171,7 +198,7 @@ class CalendarAnalysisServer:
             start_date, end_date = self._parse_date_range(query)
 
             # Extract calendar events (raw, including energy markers)
-            raw_events = self.calendar_extractor.get_events(start_date, end_date)
+            raw_events = self.calendar_manager.get_events(start_date, end_date)
 
             if not raw_events:
                 return [TextContent(
@@ -343,14 +370,122 @@ class CalendarAnalysisServer:
         except Exception as e:
             return [TextContent(type="text", text=f"Error finding free time: {e}")]
     
+    async def _refresh_cache(self, arguments: dict) -> Sequence[TextContent]:
+        """Manually refresh the calendar cache."""
+        try:
+            force = arguments.get("force", False)
+            
+            # Refresh cache
+            status = self.calendar_manager.refresh_cache(force=force)
+            
+            # Format status message
+            if status.get("error"):
+                return [TextContent(
+                    type="text",
+                    text=f"❌ Cache refresh failed: {status['error']}\n\n"
+                         f"Please check:\n"
+                         f"- icalBuddy is installed: brew install ical-buddy\n"
+                         f"- Terminal has calendar permissions in System Settings"
+                )]
+            
+            event_count = status.get("event_count", 0)
+            date_range = status.get("date_range", {})
+            start = date_range.get("start", "N/A")
+            end = date_range.get("end", "N/A")
+            
+            return [TextContent(
+                type="text",
+                text=f"✅ Cache refreshed successfully\n\n"
+                     f"📊 Statistics:\n"
+                     f"- Events cached: {event_count}\n"
+                     f"- Date range: {start} to {end}\n"
+                     f"- Cache TTL: {status.get('ttl', 0)} seconds\n"
+                     f"- Next refresh: {status.get('next_refresh', 'N/A')}"
+            )]
+            
+        except Exception as e:
+            return [TextContent(
+                type="text",
+                text=f"❌ Error refreshing cache: {e}\n\n"
+                     f"This usually means icalBuddy is not installed or lacks permissions."
+            )]
+    
+    async def _get_cache_status(self) -> Sequence[TextContent]:
+        """Get calendar cache health status."""
+        try:
+            status = self.calendar_manager.get_cache_status()
+            
+            # Check for errors
+            if status.get("error"):
+                return [TextContent(
+                    type="text",
+                    text=f"❌ Cache error: {status['error']}"
+                )]
+            
+            # Format status message
+            exists = "✅ Yes" if status.get("exists") else "❌ No"
+            expired = "⚠️ Yes (needs refresh)" if status.get("is_expired") else "✅ No (fresh)"
+            background = "✅ Active" if status.get("background_refresh") else "❌ Inactive"
+            
+            event_count = status.get("event_count", 0)
+            age_seconds = status.get("age_seconds")
+            age_str = f"{age_seconds}s ({age_seconds // 60}m)" if age_seconds else "N/A"
+            
+            date_range = status.get("date_range", {})
+            start = date_range.get("start", "N/A")
+            end = date_range.get("end", "N/A")
+            
+            return [TextContent(
+                type="text",
+                text=f"📊 Calendar Cache Status\n\n"
+                     f"🗄️ Cache File:\n"
+                     f"- Path: {status.get('cache_file', 'N/A')}\n"
+                     f"- Exists: {exists}\n"
+                     f"- Age: {age_str}\n"
+                     f"- Expired: {expired}\n\n"
+                     f"📅 Data:\n"
+                     f"- Events cached: {event_count}\n"
+                     f"- Date range: {start} to {end}\n\n"
+                     f"⚙️ Configuration:\n"
+                     f"- TTL: {status.get('ttl', 0)} seconds\n"
+                     f"- Last refresh: {status.get('last_refresh', 'N/A')}\n"
+                     f"- Next refresh: {status.get('next_refresh', 'N/A')}\n"
+                     f"- Background refresh: {background}"
+            )]
+            
+        except Exception as e:
+            return [TextContent(
+                type="text",
+                text=f"❌ Error getting cache status: {e}"
+            )]
+    
     async def initialize(self):
         """Initialize the server components."""
         # Reload configuration
         config: CalendarAnalysisConfig = self.config_manager.get_config()
-        self.calendar_extractor = CalendarExtractor(calendars=config.calendar.calendars)
-        self.calendar_writer = AppleScriptCalendarWriter(default_calendar=config.calendar.default_calendar)
-        self.cache = SimpleCalendarCache()  # Initialize cache system
+        
+        # Initialize unified cache with config
+        cache = UnifiedCache(
+            ttl=config.calendar.event_creation.get("cache_ttl", 300),
+            days_past=config.calendar.event_creation.get("cache_days_past", 60),
+            days_future=config.calendar.event_creation.get("cache_days_future", 60),
+            background_refresh=config.calendar.event_creation.get("background_refresh", False),
+            calendars=config.calendar.calendars,
+        )
+        
+        # Initialize calendar manager with cache
         self.classifier = EventClassifier(config.classification)
+        self.calendar_manager = CalendarManager(
+            cache=cache,
+            classifier=self.classifier,
+            energy_tracker=self.energy_tracker,
+        )
+        
+        # Initialize cache (may take a few seconds on first run)
+        if not self.calendar_manager.initialize():
+            print("Warning: Failed to initialize calendar cache. Check icalBuddy permissions.")
+        
+        self.calendar_writer = AppleScriptCalendarWriter(default_calendar=config.calendar.default_calendar)
 
     def _parse_date_range(self, query: str) -> tuple[date, date]:
         """Parse date range from natural language query.

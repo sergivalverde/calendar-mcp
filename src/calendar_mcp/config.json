@@ -8,7 +8,11 @@
       "default_afternoon_start": "14:00",
       "default_evening_start": "18:00",
       "work_hours_start": "09:00",
-      "work_hours_end": "17:00"
+      "work_hours_end": "17:00",
+      "cache_ttl": 300,
+      "cache_days_past": 60,
+      "cache_days_future": 60,
+      "background_refresh": false
     }
   },
   "classification": {
