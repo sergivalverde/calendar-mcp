@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "calendar-mcp": {
+      "command": "arch",
+      "args": [
+        "-arm64",
+        "/Users/s/dev/calendar-mcp/.venv/bin/python",
+        "-m",
+        "calendar_mcp.server"
+      ]
+    }
+  }
+}

@@ -1,6 +1,15 @@
 {
   "calendar": {
-    "calendars": null
+    "calendars": ["Calendar", "Personal"],
+    "default_calendar": "Calendar",
+    "event_creation": {
+      "default_duration_minutes": 60,
+      "default_morning_start": "09:00",
+      "default_afternoon_start": "14:00",
+      "default_evening_start": "18:00",
+      "work_hours_start": "09:00",
+      "work_hours_end": "17:00"
+    }
   },
   "classification": {
     "excluded_titles": [

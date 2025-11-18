@@ -2,7 +2,7 @@
 
 from datetime import datetime, date
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -124,6 +124,17 @@ class CalendarConfig(BaseModel):
 
     # Calendar selection
     calendars: Optional[List[str]] = None  # If None, uses all calendars
+    default_calendar: str = "Calendar"  # Default calendar for event creation
+
+    # Event creation settings
+    event_creation: Dict[str, Any] = Field(default_factory=lambda: {
+        "default_duration_minutes": 60,
+        "default_morning_start": "09:00",
+        "default_afternoon_start": "14:00",
+        "default_evening_start": "18:00",
+        "work_hours_start": "09:00",
+        "work_hours_end": "17:00"
+    })
 
 
 class ClassificationConfig(BaseModel):
@@ -193,6 +204,34 @@ class ClassificationConfig(BaseModel):
     # Location patterns
     github_repos_engineering: List[str] = Field(default_factory=lambda: ["research", "brain"])
     github_repos_strategy: List[str] = Field(default_factory=lambda: ["brain"])
+
+
+class EventRequest(BaseModel):
+    """Request to create a calendar event."""
+
+    title: str
+    start_datetime: datetime
+    end_datetime: datetime
+    calendar_name: Optional[str] = None
+    location: Optional[str] = None
+    notes: Optional[str] = None
+    attendees: List[str] = []
+
+
+class TimePreference(BaseModel):
+    """Time preference for scheduling."""
+
+    preference: str  # "morning", "afternoon", "evening"
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+
+
+class FreeSlot(BaseModel):
+    """Available time slot."""
+
+    start: datetime
+    end: datetime
+    duration_minutes: int
 
 
 class QueryRequest(BaseModel):

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "calendar-mcp": {
+      "command": "python",
+      "args": ["-m", "calendar_mcp.server"],
+      "env": {
+        "PYTHONPATH": "/Users/s/dev/calendar-mcp/src",
+        "PATH": "/Users/s/dev/calendar-mcp/.venv/bin:$PATH"
+      }
+    }
+  }
+}

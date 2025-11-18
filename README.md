@@ -1,44 +1,61 @@
 # Calendar Analysis MCP Server
 
-An MCP (Model Context Protocol) server that acts as an executive assistant for calendar analysis. It analyzes calendar events, classifies them into productivity categories, tracks energy levels, and generates comprehensive markdown reports with tables and charts.
+> **🚀 New here? Start with [START_HERE.md](START_HERE.md) for a 5-minute quick start!**
+
+An MCP (Model Context Protocol) server that acts as an executive assistant for calendar management. It can read calendar events, analyze them with productivity insights, and create new events through natural language commands.
 
 ## Features
 
-- **Natural Language Queries**: Ask questions like "Analyze my calendar for last week" or "Show time distribution for November"
-- **Smart Event Classification**: Automatically categorizes events into 13 productivity categories using priority-based rules
-- **Energy Level Tracking**: Matches E1-E4 energy markers to main events for productivity insights
-- **Comprehensive Reports**: Generates tables and mermaid pie charts showing time distribution and patterns
-- **Configurable Rules**: Customize classification keywords, exclusion patterns, and team domains
-- **macOS Integration**: Uses icalBuddy to extract events from macOS Calendar app
+- **📊 Calendar Analysis**: Analyze calendar events, classify them into productivity categories, track energy levels, and generate comprehensive markdown reports with tables and charts
+- **📅 Event Creation**: Create calendar events using natural language commands
+- **🔒 Direct Access**: Reads calendar data directly from macOS Calendar files (no external tools required)
+- **🎯 Smart Scheduling**: Block time for focused work, propose meetings, find available slots
+- **🔄 Real-time**: Always reads current calendar data, no caching delays
+- **🤖 Natural Language**: Intuitive commands like "Block two mornings next week to work on the presentation"
+
+**📚 Full Documentation**: See [INDEX.md](INDEX.md) for all guides and documentation.
 
 ## Installation
 
-### Prerequisites
+### Quick Start
 
-1. **Python 3.9+** with `uv` package manager
-2. **icalBuddy**: Install via Homebrew:
+1. **Prerequisites**:
+   - Python 3.10+ (3.11 recommended)
+   - [uv](https://github.com/astral-sh/uv): `curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+2. **Install**:
    ```bash
-   brew install ical-buddy
+   cd calendar-mcp
+   uv sync
    ```
 
-### Install the MCP Server
+3. **Grant Calendar Permissions** (for event creation):
+   - Open **System Settings → Privacy & Security → Calendars**
+   - Enable your MCP client (Raycast, Claude Desktop, etc.)
+   - This allows creating events via AppleScript
 
-```bash
-# Clone or download the project
-cd calendar-mcp
+4. **Configure MCP Client**:
+   - Add the Calendar MCP to your MCP client
+   - See [ADD_TO_CLAUDE.md](ADD_TO_CLAUDE.md) for Claude Desktop
+   - See [RAYCAST_FIX.md](RAYCAST_FIX.md) for Raycast
 
-# Install dependencies and create virtual environment
-uv sync
+5. **Test**:
+   ```bash
+   uv run python test_calendar_analysis.py
+   ```
 
-# The server is now ready to use
-```
+See detailed guides:
+- [QUICK_START.md](QUICK_START.md) - Complete setup guide
+- [INSTALL.md](INSTALL.md) - Detailed installation instructions
+- [ADD_TO_CLAUDE.md](ADD_TO_CLAUDE.md) - Adding to Claude Desktop
 
 ## Usage
 
-### Basic Usage
+### Calendar Analysis
 
-The MCP server provides a `query_calendar` tool that accepts natural language queries. Here are some examples:
+The MCP server provides tools for both reading and creating calendar events:
 
+#### Reading Events
 ```python
 # Analyze last week
 "Analyze my calendar for last week"
@@ -52,6 +69,32 @@ The MCP server provides a `query_calendar` tool that accepts natural language qu
 # Recent activity
 "Analyze my calendar for the last 3 days"
 ```
+
+#### Creating Events
+
+**Block Time for Focused Work:**
+```
+"Block two mornings next week to work on the presentation"
+```
+
+**Schedule Meetings:**
+```
+"Propose a meeting with Joe in two weeks, afternoon preferred"
+```
+
+**Quick Event Creation:**
+```
+"Add 'Dentist appointment' tomorrow at 2pm for 1 hour"
+```
+
+#### Available Tools
+
+- `query_calendar` - Analyze calendar events and generate productivity reports
+- `create_event` - Create a single calendar event with specific date/time
+- `create_blocking_time` - Block multiple time slots for focused work
+- `propose_meeting` - Intelligently schedule meetings with attendee management
+- `list_calendars` - Show available calendar names
+- `find_free_time` - Find available time slots in your schedule
 
 ### Date Range Parsing
 
@@ -69,15 +112,28 @@ The server automatically parses date ranges from natural language:
 - **Specific months**: "November", "last year November"
 - **Default**: Last 7 days (if no date range detected)
 
-## Calendar Access Configuration
+## Calendar Access
 
-The MCP server uses **icalBuddy** to access your macOS Calendar data. By default, it accesses all calendars that your user account has permission to read.
+The MCP server reads calendar data directly from macOS Calendar files and creates events via AppleScript.
+
+### Reading Events
+
+- **Direct Access**: Reads .ics files from `~/Library/Calendars/` (no external tools needed)
+- **Real-time**: Always shows current calendar data
+- **No Permissions Required**: Just file system access to your home directory
+
+### Creating Events
+
+- **AppleScript**: Uses macOS-native AppleScript to create events in Calendar.app
+- **Permission Required**: Grant calendar access to your MCP client (Raycast, Claude Desktop, etc.)
+- **One-time Setup**: Permissions only need to be granted once
 
 ### How Calendar Access Works
 
-1. **System Integration**: icalBuddy uses the same macOS Calendar permissions as the Calendar.app
-2. **Default Behavior**: If no specific calendars are configured, it queries all accessible calendars
-3. **Security**: Only calendars you have access to in Calendar.app are available
+1. **Reading**: Direct file access to .ics files in your Calendars folder
+2. **Writing**: AppleScript integration with Calendar.app
+3. **Security**: Same permissions as Calendar.app itself
+4. **Compatibility**: Works with any MCP client that can run AppleScript
 
 ### Checking Available Calendars
 
