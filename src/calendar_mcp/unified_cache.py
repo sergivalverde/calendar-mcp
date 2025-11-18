@@ -376,9 +376,9 @@ class UnifiedCache:
             "-iep",
             "title,datetime,location,notes,attendees",
             "-df",
-            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d",  # Date format: YYYY-MM-DD
             "-tf",
-            "%H:%M",
+            "%H:%M",  # Time format: HH:MM
             f"eventsFrom:{start_date.strftime('%Y-%m-%d')}",
             f"to:{end_date.strftime('%Y-%m-%d')}",
         ]
@@ -502,32 +502,36 @@ class UnifiedCache:
         Parse event datetime string into CalendarEvent.
 
         Handles formats like:
-        - "2024-11-17 10:00 - 11:00"
-        - "2024-11-17 at 10:00"
+        - "2024-11-17 at 10:00 - 11:00" (timed event)
+        - "2024-11-17 at 10:00" (event with no end time - default 1 hour)
         - "2024-11-17" (all-day)
         """
         try:
-            # Format: "2024-11-17 10:00 - 11:00" or "2024-11-17 at 10:00"
+            # Format: "2024-11-17 at 10:00 - 11:00" or "2024-11-17 at 10:00"
             datetime_match = re.match(
-                r"(\d{4}-\d{2}-\d{2})\s+(?:at\s+)?(\d{1,2}:\d{2})\s*(?:-\s*(\d{1,2}:\d{2}))?",
+                r"(\d{4}-\d{2}-\d{2})\s+at\s+(\d{1,2}:\d{2})\s*(?:-\s*(\d{1,2}:\d{2}))?",
                 datetime_str,
             )
 
             if datetime_match:
                 date_str = datetime_match.group(1)
                 start_time = datetime_match.group(2)
-                end_time = datetime_match.group(3) or start_time
+                end_time = datetime_match.group(3)
 
                 start_datetime = datetime.strptime(
                     f"{date_str} {start_time}", "%Y-%m-%d %H:%M"
                 )
-                end_datetime = datetime.strptime(
-                    f"{date_str} {end_time}", "%Y-%m-%d %H:%M"
-                )
-
-                # If end time is earlier than start time, assume next day
-                if end_datetime <= start_datetime:
-                    end_datetime += timedelta(days=1)
+                
+                # If no end time provided, default to 1 hour duration
+                if end_time is None:
+                    end_datetime = start_datetime + timedelta(hours=1)
+                else:
+                    end_datetime = datetime.strptime(
+                        f"{date_str} {end_time}", "%Y-%m-%d %H:%M"
+                    )
+                    # If end time is earlier than start time, assume next day
+                    if end_datetime < start_datetime:
+                        end_datetime += timedelta(days=1)
 
                 return CalendarEvent(
                     title=title,
