@@ -34,11 +34,11 @@ class CalendarManager:
 
         Args:
             cache: UnifiedCache instance (created if None)
-            classifier: EventClassifier instance (created if None)
+            classifier: EventClassifier instance (optional)
             energy_tracker: EnergyTracker instance (created if None)
         """
         self.cache = cache or UnifiedCache()
-        self.classifier = classifier or EventClassifier()
+        self.classifier = classifier  # Can be None
         self.energy_tracker = energy_tracker or EnergyTracker()
 
         logger.info("CalendarManager initialized")
